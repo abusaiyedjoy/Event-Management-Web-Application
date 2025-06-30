@@ -1,5 +1,7 @@
 /* eslint-disable react-hooks/exhaustive-deps */
 import { useState, useMemo } from "react";
+import useAxiosPublic from './../hooks/useAxiosPublic';
+import { useQuery } from "@tanstack/react-query";
 import {
     FaUser,
     FaCalendarAlt,
@@ -8,34 +10,6 @@ import {
     FaSearch,
 } from "react-icons/fa";
 
-const initialEvents = [
-    {
-        title: "Cloude Context",
-        organizer: "Tech Cluder",
-        date: "2025-06-27T22:20:00",
-        location: "Chattogram",
-        description: "This is from tech cluder community.",
-        attendees: 0,
-    },
-    {
-        title: "Green Energy Expo",
-        organizer: "Lisa Anderson",
-        date: "2024-08-10T11:00:00",
-        location: "Expo Center",
-        description:
-            "Discover the latest in renewable energy technologies, sustainable solutions, and environmental innovations.",
-        attendees: 156,
-    },
-    {
-        title: "AI & Machine Learning Summit",
-        organizer: "David Rodriguez",
-        date: "2024-08-05T09:30:00",
-        location: "University Conference Hall",
-        description:
-            "Explore the future of AI and machine learning with expert speakers, demos, and discussions on cutting-edge...",
-        attendees: 89,
-    },
-];
 
 const dateOptions = [
     { label: "All Events", value: "all" },
@@ -47,78 +21,86 @@ const dateOptions = [
 ];
 
 const EventsPage = () => {
-    const [events, setEvents] = useState(initialEvents);
-    const [joinedEvents, setJoinedEvents] = useState([]);
+    const axiosPublic = useAxiosPublic();
     const [searchText, setSearchText] = useState("");
     const [filter, setFilter] = useState("all");
+    const [joinedEvents, setJoinedEvents] = useState([]);
 
     const today = new Date();
 
-    // Filter and Sort Events
+    const { data: events = [], refetch } = useQuery({
+        queryKey: ['events'],
+        queryFn: async () => {
+            const res = await axiosPublic.get('/events');
+            return res.data;
+        }
+    });
+
+    const handleJoin = async (eventId) => {
+        if (joinedEvents.includes(eventId)) return;
+
+        try {
+            await axiosPublic.patch(`/events/${eventId}/join`);
+            setJoinedEvents([...joinedEvents, eventId]);
+            refetch();
+        } catch (error) {
+            console.error("Failed to join event:", error);
+        }
+    };
+
     const filteredEvents = useMemo(() => {
-        const filtered = events.filter((event) => {
-            const eventDate = new Date(event.date);
+        return events
+            .filter((event) => {
+                const eventDate = new Date(event.date);
 
-            // Search filter
-            if (
-                searchText &&
-                !event.title.toLowerCase().includes(searchText.toLowerCase())
-            )
-                return false;
+                if (
+                    searchText &&
+                    !event.title.toLowerCase().includes(searchText.toLowerCase())
+                )
+                    return false;
 
-            // Date filter
-            if (filter !== "all") {
-                const start = new Date(today);
-                const end = new Date(today);
+                if (filter !== "all") {
+                    const start = new Date(today);
+                    const end = new Date(today);
 
-                if (filter === "today") {
-                    return (
-                        eventDate.toDateString() === today.toDateString()
-                    );
+                    if (filter === "today") {
+                        return eventDate.toDateString() === today.toDateString();
+                    }
+
+                    if (filter === "thisWeek") {
+                        const firstDay = today.getDate() - today.getDay();
+                        start.setDate(firstDay);
+                        end.setDate(firstDay + 6);
+                    }
+
+                    if (filter === "lastWeek") {
+                        const firstDay = today.getDate() - today.getDay() - 7;
+                        start.setDate(firstDay);
+                        end.setDate(firstDay + 6);
+                    }
+
+                    if (filter === "thisMonth") {
+                        start.setDate(1);
+                        end.setMonth(today.getMonth() + 1);
+                        end.setDate(0);
+                    }
+
+                    if (filter === "lastMonth") {
+                        start.setMonth(today.getMonth() - 1);
+                        start.setDate(1);
+                        end.setMonth(today.getMonth());
+                        end.setDate(0);
+                    }
+
+                    return eventDate >= start && eventDate <= end;
                 }
 
-                if (filter === "thisWeek") {
-                    const firstDay = today.getDate() - today.getDay();
-                    start.setDate(firstDay);
-                    end.setDate(firstDay + 6);
-                }
-
-                if (filter === "lastWeek") {
-                    const firstDay = today.getDate() - today.getDay() - 7;
-                    start.setDate(firstDay);
-                    end.setDate(firstDay + 6);
-                }
-
-                if (filter === "thisMonth") {
-                    start.setDate(1);
-                    end.setMonth(today.getMonth() + 1);
-                    end.setDate(0);
-                }
-
-                if (filter === "lastMonth") {
-                    start.setMonth(today.getMonth() - 1);
-                    start.setDate(1);
-                    end.setMonth(today.getMonth());
-                    end.setDate(0);
-                }
-
-                return eventDate >= start && eventDate <= end;
-            }
-
-            return true;
-        });
-
-        return filtered.sort((a, b) => new Date(b.date) - new Date(a.date));
+                return true;
+            })
+            .sort((a, b) => new Date(b.date) - new Date(a.date));
     }, [searchText, filter, events]);
 
-    const handleJoin = (index) => {
-        if (joinedEvents.includes(index)) return;
-
-        const updatedEvents = [...events];
-        updatedEvents[index].attendees += 1;
-        setEvents(updatedEvents);
-        setJoinedEvents([...joinedEvents, index]);
-    };
+    
 
     return (
         <div className="px-4 py-8 max-w-7xl mx-auto">
@@ -199,8 +181,8 @@ const EventsPage = () => {
                                     onClick={() => handleJoin(events.indexOf(event))}
                                     disabled={joinedEvents.includes(events.indexOf(event))}
                                     className={`${joinedEvents.includes(events.indexOf(event))
-                                            ? "bg-gray-400 cursor-not-allowed"
-                                            : "bg-purple-600 hover:bg-purple-700"
+                                        ? "bg-gray-400 cursor-not-allowed"
+                                        : "bg-purple-600 hover:bg-purple-700"
                                         } text-white px-4 py-1.5 rounded-md transition`}
                                 >
                                     {joinedEvents.includes(events.indexOf(event))
