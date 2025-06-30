@@ -9,6 +9,7 @@ import AddEvent from "../Pages/AddEvent";
 import NotFoundPage from './../Pages/ErrorPage';
 import EventsPage from "../Pages/Events";
 import MyEventsPage from "../Pages/MyEventPage";
+import PrivateRoute from "../Components/PrivateRoute";
 
 const router = createBrowserRouter([
   {
@@ -22,15 +23,15 @@ const router = createBrowserRouter([
       },
       {
         path: "/add-event",
-        element: <AddEvent />
+        element: <PrivateRoute><AddEvent /></PrivateRoute>
       },
       {
         path: "/event",
-        element: <EventsPage />
+        element: <PrivateRoute><EventsPage /></PrivateRoute>
       },
       {
         path: "/my-event",
-        element: <MyEventsPage />
+        element: <PrivateRoute><MyEventsPage /></PrivateRoute>
       },
       {
         path: "/signin",

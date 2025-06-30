@@ -42,8 +42,8 @@ const SignUp = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-100 px-4">
-      <div className="max-w-md w-full bg-white p-8 rounded-xl shadow-md">
+    <div className="min-h-screen flex items-center justify-center px-4">
+      <div className="max-w-md w-full bg-white p-8 border border-gray-200 rounded-xl shadow-md">
         {/* Top Icon and Heading */}
         <div className="flex flex-col items-center mb-6">
           <BsPersonPlusFill className="text-4xl text-purple-600 mb-2" />
