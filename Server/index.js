@@ -10,7 +10,7 @@ dotenv.config();
 const app = express();
 const port = process.env.PORT || 3000;
 
-const allowedOrigins = ["http://localhost:5174"];
+const allowedOrigins = ["http://localhost:5174", `${process.env.FRONTEND}`];
 app.use(
   cors({
     origin: allowedOrigins,

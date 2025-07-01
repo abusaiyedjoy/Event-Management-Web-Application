@@ -26,9 +26,8 @@ const SignUp = () => {
     try {
       await register(name, email, password, photo);
       toast.success("Registered and logged in successfully");
-      navigate("/"); // Redirect after successful signup/login
+      navigate("/"); 
     } catch (err) {
-      // Show backend error message if exists
       toast.error(err.response?.data?.message || err.message || "Registration failed");
     }
   };
