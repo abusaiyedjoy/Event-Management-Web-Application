@@ -1,62 +1,80 @@
 /* eslint-disable react-refresh/only-export-components */
-import { createContext, useEffect, useState } from "react"
-import app from './firebase.config';
-import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged, updateProfile } from "firebase/auth"
+/* eslint-disable no-useless-catch */
+import { createContext, useEffect, useState } from "react";
+import axios from "axios";
 
-
-export const AuthContext = createContext(null)
-const auth = getAuth(app)
-
+export const AuthContext = createContext(null);
 
 const AuthProvider = ({ children }) => {
-    const [user, setUser] = useState(null)
-    const [loading, setLoading] = useState(true)
+    const [user, setUser] = useState(null);
+    const [loading, setLoading] = useState(true);
 
+    const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
 
-    const createUser = (email, password) => {
-        setLoading(true)
-        return createUserWithEmailAndPassword(auth, email, password)
+    const register = async (name, email, password, photo) => {
+        setLoading(true);
+        try {
+            await axios.post(`${API_URL}/register`, {
+                name,
+                email,
+                password,
+                photo,
+            });
+
+            // Automatically log in after registration
+            return await login(email, password);
+        } catch (error) {
+            throw error;
+        } finally {
+            setLoading(false);
+        }
     };
 
-    const updateUserProfile = (profile) => {
-        return updateProfile(auth.currentUser, profile);
+    const login = async (email, password) => {
+        setLoading(true);
+        try {
+            const res = await axios.post(`${API_URL}/login`, { email, password });
+            const { token, user } = res.data;
+
+            localStorage.setItem("token", token);
+            setUser(user);
+
+            return user;
+        } catch (error) {
+            throw error;
+        } finally {
+            setLoading(false);
+        }
     };
 
-    const signInUser = (email, password) => {
-        setLoading(true)
-        return signInWithEmailAndPassword(auth, email, password)
-    };
-
-    const signOutUser = async () => {
-        setLoading(true)
-        return await signOut(auth)
+    const logout = () => {
+        localStorage.removeItem("token");
+        setUser(null);
     };
 
     useEffect(() => {
-        const unSubscribe = onAuthStateChanged(auth, async (currentUser) => {
-            setLoading(false)
-            setUser(currentUser)
-            console.log("Current User:", currentUser);
-        });
-        return () => {
-            unSubscribe()
-        };
-    }, [])
+        const token = localStorage.getItem("token");
+        if (token) {
+            try {
+                const payload = JSON.parse(atob(token.split(".")[1]));
+                setUser({ id: payload.id, email: payload.email }); // minimal user info from token
+            } catch (err) {
+                console.error("Invalid token", err);
+                localStorage.removeItem("token");
+            }
+        }
+        setLoading(false);
+    }, []);
 
-    const userInfo = {
+    const authInfo = {
         user,
         loading,
-        createUser,
-        updateUserProfile,
-        signInUser,
-        signOutUser,
-    }
+        register,
+        login,
+        logout,
+    };
 
-    return (
-        <AuthContext.Provider value={userInfo}>
-            {children}
-        </AuthContext.Provider>
-    )
+    return <AuthContext.Provider value={authInfo}>{children}</AuthContext.Provider>;
 };
 
 export default AuthProvider;

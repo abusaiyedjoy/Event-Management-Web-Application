@@ -4,12 +4,12 @@ import { useNavigate } from "react-router-dom";
 import { AuthContext } from "../Provider/AuthProvider";
 
 const axiosSecure = axios.create({
-    baseURL: `${import.meta.env.VITE_API_URL}`,
+    baseURL: "http://localhost:5000",
 });
 
 const useAxiosSecure = () => {
     const navigate = useNavigate();
-    const { signOutUser } = useContext(AuthContext);
+    const { logout } = useContext(AuthContext);
 
     axiosSecure.interceptors.request.use(config => {
         const token = localStorage.getItem('access-token');
@@ -21,7 +21,7 @@ const useAxiosSecure = () => {
 
     axiosSecure.interceptors.response.use(response => response, async error => {
         if (error.response.status === 401 || error.response.status === 403) {
-            await signOutUser();
+            await logout();
             navigate('/signin');
         }
         return Promise.reject(error);

@@ -14,9 +14,11 @@ const FeaturedEvents = () => {
     queryKey: ['events'],
     queryFn: async () => {
       const res = await axiosPublic.get('/events');
-      return res.data;
+      console.log("Fetched events data 👇:", res.data);
+      return Array.isArray(res.data) ? res.data : [];
     }
   });
+
 
   const handleJoin = (index) => {
     if (!joinedEvents.includes(index)) {
@@ -31,7 +33,7 @@ const FeaturedEvents = () => {
       </h2>
 
       <div className="grid gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 justify-center">
-        {events.slice(0,3).map((event, index) => (
+        {events?.slice(0, 3).map((event, index) => (
           <div
             key={index}
             className="bg-white rounded-xl shadow-lg overflow-hidden hover:shadow-2xl transition transform hover:-translate-y-1"

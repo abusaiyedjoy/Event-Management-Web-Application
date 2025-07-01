@@ -1,45 +1,45 @@
-import { useContext, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
-import { AuthContext } from "../Provider/AuthProvider";
+import { useState } from "react";
+import { Link, useNavigate, useLocation } from "react-router-dom";
 import toast from "react-hot-toast";
 import { FaEnvelope, FaLock } from "react-icons/fa";
 import { BsCalendar3Fill } from "react-icons/bs";
+import useAxiosPublic from "../hooks/useAxiosPublic";
 
 const SignIn = () => {
-  const { signInUser } = useContext(AuthContext);
+  const axiosPublic = useAxiosPublic();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const navigate = useNavigate();
-
+  const location = useLocation();
   const from = location.state?.from?.pathname || "/";
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    signInUser(email, password)
-      .then(() => {
-        toast.success("Signed in user");
-        navigate(from, { replace: true }); 
-        setEmail("");
-        setPassword("");
-      })
-      .catch((err) => {
-        toast.error(err.message);
+    try {
+      const result = await axiosPublic.post("/login", {
+        email,
+        password,
       });
+
+      // Save token to localStorage
+      localStorage.setItem("token", result.data.token);
+
+      toast.success("Signed in successfully");
+      navigate(from, { replace: true });
+    } catch (err) {
+      toast.error(err.message);
+    }
   };
 
   return (
     <div className="min-h-screen flex items-center justify-center px-4">
-      <div className="max-w-md w-full bg-white border border-gray-200 p-8 rounded-xl shadow-md">
+      <div className="max-w-md w-full bg-white p-8 border rounded-xl shadow-md">
         <div className="flex flex-col items-center mb-6">
           <BsCalendar3Fill className="text-4xl text-purple-600 mb-2" />
-          <h2 className="text-2xl font-bold text-center text-gray-900">Welcome Back</h2>
-          <p className="text-gray-500 text-sm mt-1 text-center">
-            Sign in to continue to EventHub
-          </p>
+          <h2 className="text-2xl font-bold text-center">Welcome Back</h2>
         </div>
 
         <form onSubmit={handleSubmit}>
-          {/* Email */}
           <div className="mb-4">
             <label className="block text-sm font-medium mb-1">Email</label>
             <div className="flex items-center border rounded-md px-3 py-2 bg-white shadow-sm">
@@ -55,7 +55,6 @@ const SignIn = () => {
             </div>
           </div>
 
-          {/* Password */}
           <div className="mb-6">
             <label className="block text-sm font-medium mb-1">Password</label>
             <div className="flex items-center border rounded-md px-3 py-2 bg-white shadow-sm">
@@ -79,8 +78,8 @@ const SignIn = () => {
           </button>
         </form>
 
-        <p className="text-center text-sm mt-6 text-gray-700">
-          Don't have an account?{" "}
+        <p className="text-center text-sm mt-6">
+          Don’t have an account?{" "}
           <Link to="/signup" className="text-purple-600 font-medium hover:underline">
             Sign up
           </Link>
